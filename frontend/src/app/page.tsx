@@ -2,34 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-// Importamos o componente de busca inteligente
-import SearchBar from '../../components/SearchBar';
-
-// Tipagem dos dados
-interface AnimeCard {
-  title: { romaji: string };
-  coverImage: { extraLarge: string; large: string };
-  bannerImage?: string;
-  description?: string;
-}
-
-interface HomeData {
-  trending: { media: AnimeCard[] };
-  popular: { media: AnimeCard[] };
-  action: { media: AnimeCard[] };
-  romance: { media: AnimeCard[] };
-  horror: { media: AnimeCard[] };
-  sports: { media: AnimeCard[] };
-}
+// Imports corrigidos usando os atalhos @/
+import SearchBar from '@/components/SearchBar';
+import { api } from '@/services/api';
+import { HomeData, Anime } from '@/types';
 
 export default function HomePage() {
   const [data, setData] = useState<HomeData | null>(null);
 
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/home')
-      .then(res => res.json())
+    // Agora usamos nossa API centralizada! Muito mais limpo.
+    api.getHome()
       .then(setData)
-      .catch(err => console.error(err));
+      .catch(err => console.error("Erro ao carregar home:", err));
   }, []);
 
   if (!data) return (
@@ -38,6 +23,7 @@ export default function HomePage() {
     </div>
   );
 
+  // Pega o primeiro anime dos "Trending" para ser o destaque (Hero)
   const heroAnime = data.trending.media[0];
 
   return (
@@ -51,38 +37,40 @@ export default function HomePage() {
             </h1>
         </Link>
         
-        {/* BARRA DE PESQUISA INTELIGENTE */}
+        {/* BARRA DE PESQUISA (Agora importada corretamente) */}
         <div className="flex-1 max-w-lg flex justify-end">
            <SearchBar />
         </div>
       </nav>
 
       {/* --- HERO BANNER --- */}
-      <div className="relative h-[85vh] w-full">
-        <div 
-            className="absolute inset-0 bg-cover bg-center transition-all duration-700"
-            style={{ backgroundImage: `url(${heroAnime.bannerImage || heroAnime.coverImage.extraLarge})` }}
-        >
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-transparent to-transparent"></div>
-        </div>
-        
-        <div className="absolute bottom-0 p-10 max-w-3xl space-y-6 pb-24">
-            <h2 className="text-6xl font-black drop-shadow-2xl leading-tight text-white">
-                {heroAnime.title.romaji}
-            </h2>
+      {heroAnime && (
+        <div className="relative h-[85vh] w-full">
             <div 
-                className="text-gray-200 line-clamp-3 text-lg drop-shadow-md font-medium" 
-                dangerouslySetInnerHTML={{__html: heroAnime.description || ""}} 
-            />
+                className="absolute inset-0 bg-cover bg-center transition-all duration-700"
+                style={{ backgroundImage: `url(${heroAnime.bannerImage || heroAnime.coverImage.extraLarge})` }}
+            >
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-transparent to-transparent"></div>
+            </div>
             
-            <Link href={`/watch/${heroAnime.title.romaji}`}>
-                <button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-10 py-4 rounded-xl font-bold text-xl transition-all shadow-[0_0_20px_rgba(147,51,234,0.5)] hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.7)] flex items-center gap-2">
-                    ▶ Assistir Agora
-                </button>
-            </Link>
+            <div className="absolute bottom-0 p-10 max-w-3xl space-y-6 pb-24">
+                <h2 className="text-6xl font-black drop-shadow-2xl leading-tight text-white">
+                    {heroAnime.title.romaji}
+                </h2>
+                <div 
+                    className="text-gray-200 line-clamp-3 text-lg drop-shadow-md font-medium" 
+                    dangerouslySetInnerHTML={{__html: heroAnime.description || ""}} 
+                />
+                
+                <Link href={`/watch/${encodeURIComponent(heroAnime.title.romaji)}`}>
+                    <button className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-10 py-4 rounded-xl font-bold text-xl transition-all shadow-[0_0_20px_rgba(147,51,234,0.5)] hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.7)] flex items-center gap-2">
+                        ▶ Assistir Agora
+                    </button>
+                </Link>
+            </div>
         </div>
-      </div>
+      )}
 
       {/* --- LISTAS DE CATEGORIAS --- */}
       <div className="px-8 mt-4 relative z-20 space-y-12 pb-10">
@@ -98,7 +86,7 @@ export default function HomePage() {
 }
 
 // Componente da Linha (Carrossel)
-function AnimeRow({ title, animes }: { title: string, animes: AnimeCard[] }) {
+function AnimeRow({ title, animes }: { title: string, animes: Anime[] }) {
     if (!animes || animes.length === 0) return null;
 
     return (
@@ -106,11 +94,11 @@ function AnimeRow({ title, animes }: { title: string, animes: AnimeCard[] }) {
             <h3 className="text-2xl font-bold mb-6 text-gray-100 pl-4 border-l-4 border-purple-500 shadow-sm">{title}</h3>
             <div className="flex gap-6 overflow-x-auto pb-8 pt-2 px-4 scrollbar-thin scrollbar-thumb-purple-900 scrollbar-track-transparent">
                 {animes.map((anime) => (
-                    <Link key={anime.title.romaji} href={`/watch/${anime.title.romaji}`}>
+                    <Link key={anime.id || anime.title.romaji} href={`/watch/${encodeURIComponent(anime.title.romaji)}`}>
                         <div className="flex-none w-[180px] cursor-pointer group relative">
                             <div className="overflow-hidden rounded-xl shadow-lg border border-gray-800">
                                 <img 
-                                    src={anime.coverImage.large} 
+                                    src={anime.coverImage.large || anime.coverImage.medium} 
                                     alt={anime.title.romaji}
                                     className="w-full h-[260px] object-cover transition-transform duration-300 group-hover:scale-110 group-hover:opacity-80"
                                 />

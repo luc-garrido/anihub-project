@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import ReactHlsPlayer from 'react-hls-player';
 import { PlayIcon, FilmIcon } from '@heroicons/react/24/solid';
-// Importa o SearchBar (subindo 3 níveis de pasta)
-import SearchBar from '../../../../components/SearchBar';
+import SearchBar from '@/components/SearchBar';
 
 interface AnimeData {
   title: string;
@@ -19,14 +17,12 @@ interface AnimeData {
 export default function PlayerPage({ params }: { params: { id: string } }) {
   const animeNameFromUrl = decodeURIComponent(params.id);
   
-  // Usamos o nome da URL como termo inicial
   const [searchTerm] = useState(animeNameFromUrl); 
   const [animeData, setAnimeData] = useState<AnimeData | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [episode, setEpisode] = useState(1);
 
-  // Navegação de Episódios
   const playNext = () => {
     if (episode < (animeData?.episodes || 999)) changeEpisode(episode + 1);
   };
@@ -38,7 +34,6 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
     return url.includes('.mp4') || url.includes('.m3u8');
   };
 
-  // Carrega dados iniciais
   async function loadPageData() {
     setLoading(true);
     setAnimeData(null);
@@ -46,12 +41,13 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
     setEpisode(1); 
 
     try {
-      const resMeta = await fetch(`http://127.0.0.1:8000/anime/${searchTerm}`);
+      const baseUrl = "http://127.0.0.1:8000";
+      const resMeta = await fetch(`${baseUrl}/anime/${searchTerm}`);
+      
       if (!resMeta.ok) throw new Error("Anime não encontrado");
       const dataMeta = await resMeta.json();
       setAnimeData(dataMeta);
 
-      // Busca Ep 1
       await fetchVideo(searchTerm, 1);
 
     } catch (error) {
@@ -61,11 +57,11 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
     }
   }
 
-  // Busca vídeo específico
   async function fetchVideo(animeName: string, epNumber: number) {
     setVideoUrl(null);
     try {
-      const resVideo = await fetch(`http://127.0.0.1:8000/watch/${animeName}/${epNumber}`);
+      const baseUrl = "http://127.0.0.1:8000";
+      const resVideo = await fetch(`${baseUrl}/watch/${animeName}/${epNumber}`);
       const dataVideo = await resVideo.json();
       setVideoUrl(dataVideo.stream_url);
     } catch (error) {
@@ -97,7 +93,6 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
             </h1>
           </Link>
           
-          {/* BARRA DE PESQUISA INTELIGENTE */}
           <div className="flex-1 max-w-lg ml-4">
             <SearchBar />
           </div>
@@ -158,7 +153,13 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
                  <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-700 relative z-10">
                     {videoUrl ? (
                       isDirectFile(videoUrl) ? (
-                        <ReactHlsPlayer src={videoUrl} autoPlay={false} controls={true} width="100%" height="100%" />
+                        <video
+                        src={videoUrl}
+                        controls
+                        className="w-full h-full"
+                        playsInline
+                      />
+
                       ) : (
                         <iframe 
                           src={videoUrl} 
@@ -169,10 +170,10 @@ export default function PlayerPage({ params }: { params: { id: string } }) {
                         />
                       )
                     ) : (
-                       <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-4 bg-gray-900/50">
-                          <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
-                          <p>Buscando link do episódio {episode}...</p>
-                       </div>
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-4 bg-gray-900/50">
+                           <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                           <p>Buscando link do episódio {episode}...</p>
+                        </div>
                     )}
                  </div>
 

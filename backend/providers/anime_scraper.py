@@ -1,6 +1,6 @@
 import httpx
 from bs4 import BeautifulSoup
-from backend.providers.provider import AnimeProvider
+from providers.provider import AnimeProvider
 import re
 
 class AnimeOnlineScraper(AnimeProvider):
