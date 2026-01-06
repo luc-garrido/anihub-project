@@ -1,0 +1,20 @@
+# Ignorar arquivos do Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Ignorar Banco de Dados Local (IMPORTANTE)
+*.db
+*.sqlite3
+backend/anihub.db
+
+# Ignorar node_modules do Frontend
+node_modules/
+.next/
+out/
+
+# Ignorar arquivos de sistema e variáveis de ambiente
+.DS_Store
+.env
